@@ -801,9 +801,25 @@ function renderQTable(){
     }).join("")}</tbody>
   </table>`;
 }
-function deleteQ(id){
-  if(!confirm("Xóa câu hỏi này?"))return;
-  saveQs(getQs().filter(q=>q.id!==id));
+async function deleteQ(id){
+
+  if(!confirm("Xóa câu hỏi này?")) return;
+
+  const q = getQs().find(x => x.id === id);
+
+  if(!q?.firestoreId){
+    alert("Không tìm thấy Firestore ID");
+    return;
+  }
+
+  await window.fb.deleteDoc(
+    window.fb.doc(
+      window.db,
+      "questions",
+      q.firestoreId
+    )
+  );
+
   renderQTable();
 }
 
@@ -887,7 +903,7 @@ function openQModal(id){
   }
   openMod("modal-q");
 }
-function saveQ(){
+async function saveQ(){
   const id=document.getElementById("mq-id").value;
   const topicId=document.getElementById("mq-topic").value;
   const type=document.getElementById("mq-type").value;
@@ -902,13 +918,46 @@ function saveQ(){
   if(type==="arrange"){answer=prompt;prompt="Sắp xếp thành câu đúng";}
   if(!prompt||!answer){document.getElementById("mq-err").classList.add("on");return;}
   const opts=optsRaw?optsRaw.split(",").map(x=>x.trim()).filter(Boolean):[];
-  let qs=getQs();
   if(id){
-    qs=qs.map(q=>q.id===id?{...q,topicId,type,prompt,answer,opts,extra}:q);
-  } else {
-    qs.push({id:"q"+Date.now(),topicId,type,prompt,answer,opts,extra});
+  
+    const existing =
+      getQs().find(q => q.id === id);
+  
+    await window.fb.updateDoc(
+      window.fb.doc(
+        window.db,
+        "questions",
+        existing.firestoreId
+      ),
+      {
+        topicId,
+        type,
+        prompt,
+        answer,
+        opts,
+        extra
+      }
+    );
+  
+  }else{
+  
+    await window.fb.addDoc(
+      window.fb.collection(
+        window.db,
+        "questions"
+      ),
+      {
+        id:"q"+Date.now(),
+        topicId,
+        type,
+        prompt,
+        answer,
+        opts,
+        extra
+      }
+    );
+  
   }
-  saveQs(qs);
   closeMod("modal-q");
   renderQTable();
 }
