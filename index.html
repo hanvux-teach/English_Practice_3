@@ -212,7 +212,17 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
 console.log("🔥 Firebase connected");
+onSnapshot(
+  collection(db, "questions"),
+  (snapshot) => {
 
+    console.log(
+      "Questions:",
+      snapshot.docs.length
+    );
+
+  }
+);
 window.db = db;
 window.fb = {
   collection,
