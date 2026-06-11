@@ -964,7 +964,7 @@ async function saveQ(){
 
 // ── CSV Import ──
 function openCsvModal(){document.getElementById("csv-file").value="";document.getElementById("csv-preview").textContent="";document.getElementById("csv-err").classList.remove("on");openMod("modal-csv");}
-function importCSV(){
+async function importCSV(){
   const file=document.getElementById("csv-file").files[0];
   if(!file){document.getElementById("csv-err").classList.add("on");return;}
   const reader=new FileReader();
@@ -981,9 +981,25 @@ function importCSV(){
         newQs.push({id:"csv"+Date.now()+Math.random().toString(36).slice(2),topicId:topicId.trim(),type:type.trim(),prompt:prompt.trim(),answer:answer.trim(),opts,extra:extra.trim()});
       }
       if(!newQs.length){document.getElementById("csv-err").classList.add("on");return;}
-      saveQs([...getQs(),...newQs]);
-      document.getElementById("csv-preview").textContent="✓ Đã import "+newQs.length+" câu hỏi.";
-      setTimeout(()=>{closeMod("modal-csv");renderQTable();},1000);
+      for(const q of newQs){
+      
+        await window.fb.addDoc(
+          window.fb.collection(
+            window.db,
+            "questions"
+          ),
+          q
+        );
+      
+      }
+      
+      document.getElementById("csv-preview").textContent =
+        "✓ Đã import " + newQs.length + " câu hỏi.";
+      
+      setTimeout(()=>{
+        closeMod("modal-csv");
+        renderQTable();
+      },1000);
     }catch(err){document.getElementById("csv-err").classList.add("on");}
   };
   reader.readAsText(file,"UTF-8");
