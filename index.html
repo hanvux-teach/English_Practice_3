@@ -766,27 +766,95 @@ function openTopicModal(id){
   document.getElementById("mt-err").classList.remove("on");
   openMod("modal-topic");
 }
-function saveTopic(){
+async function saveTopic(){
   const id=document.getElementById("mt-id").value;
   const emoji=document.getElementById("mt-emoji").value.trim();
   const name=document.getElementById("mt-name").value.trim();
   const week=parseInt(document.getElementById("mt-week").value)||0;
   if(!name||!week){document.getElementById("mt-err").classList.add("on");return;}
-  let topics=getTopics();
   if(id){
-    topics=topics.map(t=>t.id===id?{...t,emoji,name,week}:t);
-  } else {
-    const newId=name.toLowerCase().replace(/\s+/g,"_").replace(/[^a-z0-9_]/g,"")+"_"+(Date.now()%10000);
-    topics.push({id:newId,name,emoji:emoji||"📚",week});
+    const existing =
+      getTopics().find(t => t.id === id);
+  
+    await window.fb.updateDoc(
+      window.fb.doc(
+        window.db,
+        "topics",
+        existing.firestoreId
+      ),
+      {
+        id,
+        name,
+        emoji: emoji || "📚",
+        week
+      }
+    );
+  
+  }else{
+  
+    const newId =
+      name.toLowerCase()
+        .replace(/\s+/g,"_")
+        .replace(/[^a-z0-9_]/g,"")
+      + "_" + (Date.now()%10000);
+  
+    await window.fb.addDoc(
+      window.fb.collection(
+        window.db,
+        "topics"
+      ),
+      {
+        id:newId,
+        name,
+        emoji: emoji || "📚",
+        week
+      }
+    );
+  
   }
-  saveTopics(topics);
   closeMod("modal-topic");
   renderAdminTopics();
 }
-function deleteTopic(id){
-  if(!confirm("Xóa chủ đề này? Tất cả câu hỏi trong chủ đề cũng sẽ bị xóa!"))return;
-  saveTopics(getTopics().filter(t=>t.id!==id));
-  saveQs(getQs().filter(q=>q.topicId!==id));
+async function deleteTopic(id){
+  if(!confirm(
+    "Xóa chủ đề này? Tất cả câu hỏi trong chủ đề cũng sẽ bị xóa!"
+  )) return;
+  const topic =
+    getTopics().find(
+      t => t.id === id
+    );
+  const questions =
+    getQs().filter(
+      q => q.topicId === id
+    );
+
+  for(const q of questions){
+
+    if(q.firestoreId){
+
+      await window.fb.deleteDoc(
+        window.fb.doc(
+          window.db,
+          "questions",
+          q.firestoreId
+        )
+      );
+
+    }
+
+  }
+  if(topic?.firestoreId){
+
+    await window.fb.deleteDoc(
+      window.fb.doc(
+        window.db,
+        "topics",
+        topic.firestoreId
+      )
+    );
+
+  }
+
   renderAdminTopics();
 }
 
