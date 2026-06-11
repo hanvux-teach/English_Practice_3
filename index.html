@@ -666,7 +666,24 @@ async function setScore(user,topicId,pct){
 let currentUser=null;
 let quizQueue=[],quizIdx=0,quizCorrect=0,quizTopicId=null,isMix=false,mixCount=20;
 let arrangeState={placed:[],bank:[]};
+let currentAudio=null;
 
+function playAudio(url){
+
+  if(!url) return;
+
+  if(currentAudio){
+    currentAudio.pause();
+    currentAudio.currentTime=0;
+  }
+
+  currentAudio=new Audio(url);
+
+  currentAudio.play().catch(err=>{
+    console.error(err);
+  });
+
+}
 // ══════ INIT ══════
 window.onload=()=>{
   initPins();
@@ -969,13 +986,16 @@ const Q_FORMS={
     <label class="lbl">Các lựa chọn (phân cách bằng dấu phẩy, gồm đáp án đúng)</label>
     <input class="inp" id="qf-opts" placeholder="rabbit, bear, bird, lion">
     <input type="hidden" id="qf-extra" value="">`,
-  listen:`<label class="lbl">Từ sẽ được đọc to (text-to-speech)</label>
-    <input class="inp" id="qf-answer" placeholder="rabbit">
-    <label class="lbl">Hướng dẫn (thường để mặc định)</label>
-    <input class="inp" id="qf-prompt" placeholder="Nghe và chọn từ đúng">
-    <label class="lbl">Các lựa chọn (phân cách bằng dấu phẩy, gồm đáp án đúng)</label>
-    <input class="inp" id="qf-opts" placeholder="rabbit, cat, dog, fish">
-    <input type="hidden" id="qf-extra" value="">`,
+  listen:`<label class="lbl">Đáp án đúng</label>
+  <input class="inp" id="qf-answer" placeholder="rabbit">
+  <label class="lbl">Audio URL</label>
+  <input class="inp" id="qf-audio" placeholder="https://....mp3">
+  <label class="lbl">Hướng dẫn</label>
+  <input class="inp" id="qf-prompt" value="Nghe và chọn từ đúng">
+  <label class="lbl">Các lựa chọn</label>
+  <input class="inp" id="qf-opts" placeholder="rabbit, cat, dog, fish">
+  
+  <input type="hidden" id="qf-extra" value="">`,
   tf:`<label class="lbl">Câu tiếng Anh (đúng hoặc sai)</label>
     <input class="inp" id="qf-prompt" placeholder="Elephants can fly.">
     <label class="lbl">Câu này đúng hay sai?</label>
@@ -1013,6 +1033,7 @@ function openQModal(id){
       const fa=document.getElementById("qf-answer");if(fa&&fa.tagName!=="SELECT")fa.value=q.answer||"";else if(fa)fa.value=q.answer||"True";
       const fo=document.getElementById("qf-opts");if(fo&&fo.type!=="hidden")fo.value=(q.opts||[]).join(", ");
       const fe=document.getElementById("qf-extra");if(fe&&fe.type!=="hidden")fe.value=q.extra||"";
+      const faud=document.getElementById("qf-audio");if(faud) faud.value=q.audioUrl||"";
     },10);
   }
   openMod("modal-q");
@@ -1025,10 +1046,12 @@ async function saveQ(){
   const fa=document.getElementById("qf-answer");
   const fo=document.getElementById("qf-opts");
   const fe=document.getElementById("qf-extra");
+  const faud=document.getElementById("qf-audio");
   let prompt=fp?fp.value.trim():"";
   let answer=fa?fa.value.trim():"";
   let optsRaw=fo?fo.value:"";
   let extra=fe?fe.value.trim():"";
+  let audioUrl=faud?faud.value.trim():"";
   if(type==="arrange"){answer=prompt;prompt="Sắp xếp thành câu đúng";}
   if(!prompt||!answer){document.getElementById("mq-err").classList.add("on");return;}
   const opts=optsRaw?optsRaw.split(",").map(x=>x.trim()).filter(Boolean):[];
@@ -1049,7 +1072,8 @@ async function saveQ(){
         prompt,
         answer,
         opts,
-        extra
+        extra,
+        audioUrl
       }
     );
   
@@ -1067,7 +1091,8 @@ async function saveQ(){
         prompt,
         answer,
         opts,
-        extra
+        extra,
+        audioUrl
       }
     );
   
@@ -1367,23 +1392,70 @@ function checkPhon(btn,c,a){
   const nb=document.getElementById("nb");if(nb){nb.textContent=quizIdx+1<quizQueue.length?"Câu tiếp theo →":"Xem kết quả →";nb.classList.add("on");}
 }
 function renderListen(q){
-  const opts=q.opts&&q.opts.length?shuffled(q.opts):shuffled([q.answer]);
+  const opts=q.opts&&q.opts.length
+    ? shuffled(q.opts)
+    : shuffled([q.answer]);
+
   return `<div class="lbox">
-    <p style="font-size:13px;color:var(--tx2);margin-bottom:12px">${esc(q.prompt)}</p>
-    <button class="lbtn" onclick="speak('${esc(q.answer)}')">
-      <svg viewBox="0 0 24 24" fill="white" width="20" height="20"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
+    <p style="font-size:13px;color:var(--tx2);margin-bottom:12px">
+      ${esc(q.prompt)}
+    </p>
+
+    <button
+      class="lbtn"
+      onclick="playQuestionAudio('${esc(q.audioUrl||"")}','${esc(q.answer)}')">
+      <svg viewBox="0 0 24 24" fill="white" width="20" height="20">
+        <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
+      </svg>
       Nghe
     </button>
+
   </div>
-  <div class="opts">${opts.map(o=>`<button class="obt" onclick="checkMCQ(this,'${esc(o)}','${esc(q.answer)}')">${esc(o)}</button>`).join("")}</div>
+
+  <div class="opts">
+    ${opts.map(o=>`
+      <button
+        class="obt"
+        onclick="checkMCQ(
+          this,
+          '${esc(o)}',
+          '${esc(q.answer)}'
+        )"
+      >
+        ${esc(o)}
+      </button>
+    `).join("")}
+  </div>
+
   <div class="fb" id="fb"></div>
-  <button class="nxbt" id="nb" onclick="nextQ()"></button>`;
+
+  <button
+    class="nxbt"
+    id="nb"
+    onclick="nextQ()"
+  ></button>`;
 }
 function speak(w){
   if(!window.speechSynthesis)return;
   window.speechSynthesis.cancel();
   const u=new SpeechSynthesisUtterance(w);u.lang="en-US";u.rate=0.85;
   window.speechSynthesis.speak(u);
+}
+let currentAudio = null;
+function playQuestionAudio(audioUrl, text){
+  if(audioUrl){
+    window.speechSynthesis.cancel();
+    if(currentAudio){
+      currentAudio.pause();
+      currentAudio.currentTime = 0;
+    }
+    currentAudio = new Audio(audioUrl);
+    currentAudio.play().catch(err=>{
+      console.error(err);
+    });
+  }else{
+    speak(text);
+  }
 }
 function renderTF(q){
   return `<div class="qbox" style="font-size:16px">${esc(q.prompt)}<div style="font-size:18px;font-weight:700;margin-top:10px">"${esc(q.prompt)}"</div><span class="qsub">${q.extra?esc(q.extra):""}</span></div>
