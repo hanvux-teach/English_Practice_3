@@ -211,18 +211,27 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
+let CLOUD_QS = null;
+
 console.log("🔥 Firebase connected");
+
 onSnapshot(
-  collection(db, "questions"),
-  (snapshot) => {
+  collection(db,"questions"),
+  snap => {
+
+    CLOUD_QS = snap.docs.map(d => ({
+      id:d.id,
+      ...d.data()
+    }));
 
     console.log(
-      "Questions:",
-      snapshot.docs.length
+      "Cloud questions:",
+      CLOUD_QS.length
     );
 
   }
 );
+
 window.db = db;
 window.fb = {
   collection,
@@ -569,7 +578,8 @@ const LS={
 };
 function getTopics(){return LS.get("vp2_topics",DEFAULT_TOPICS);}
 function saveTopics(v){LS.set("vp2_topics",v);}
-function getQs(){return LS.get("vp2_questions",DEFAULT_QUESTIONS);}
+let CLOUD_QS = null;function getQs(){if(CLOUD_QS && CLOUD_QS.length){return CLOUD_QS;}
+  return LS.get("vp2_questions",DEFAULT_QUESTIONS);}
 function saveQs(v){LS.set("vp2_questions",v);}
 function getStudents(){return LS.get("vp2_students",DEFAULT_STUDENTS);}
 function saveStudents(v){LS.set("vp2_students",v);}
