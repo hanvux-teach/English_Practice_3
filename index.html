@@ -186,6 +186,42 @@ textarea.inp{resize:vertical;min-height:70px}
 }
 </style>
 </head>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
+import {
+  getFirestore,
+  collection,
+  getDocs,
+  addDoc,
+  updateDoc,
+  deleteDoc,
+  doc,
+  onSnapshot
+} from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDE-8cAVHy2hS_B2DbaQ0dmg04Qbe1N3xM",
+  authDomain: "english-practice-3.firebaseapp.com",
+  projectId: "english-practice-3",
+  storageBucket: "english-practice-3.firebasestorage.app",
+  messagingSenderId: "1093845301216",
+  appId: "1:1093845301216:web:f62cac1fb9e92fda1fdd85"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+window.db = db;
+window.fb = {
+  collection,
+  getDocs,
+  addDoc,
+  updateDoc,
+  deleteDoc,
+  doc,
+  onSnapshot
+};
+</script>
 <body>
 <div class="app">
 
