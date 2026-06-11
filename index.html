@@ -968,7 +968,7 @@ async function importCSV(){
   const file=document.getElementById("csv-file").files[0];
   if(!file){document.getElementById("csv-err").classList.add("on");return;}
   const reader=new FileReader();
-  reader.onload=e=>{
+  reader.onload = async e => {
     try{
       const lines=e.target.result.split("\n").filter(l=>l.trim());
       const newQs=[];
