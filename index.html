@@ -232,7 +232,24 @@ onSnapshot(
     );
   }
 );
+window.CLOUD_TOPICS = [];
+onSnapshot(
+  collection(db,"topics"),
+  snap => {
 
+    window.CLOUD_TOPICS =
+      snap.docs.map(d => ({
+        firestoreId:d.id,
+        ...d.data()
+      }));
+
+    console.log(
+      "Cloud topics:",
+      window.CLOUD_TOPICS.length
+    );
+
+  }
+);  
 window.db = db;
 window.fb = {
   collection,
@@ -594,7 +611,15 @@ const LS={
   get:(k,def)=>{try{const v=localStorage.getItem(k);return v!==null?JSON.parse(v):def;}catch(e){return def;}},
   set:(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
 };
-function getTopics(){return LS.get("vp2_topics",DEFAULT_TOPICS);}
+function getTopics(){
+  if(window.CLOUD_TOPICS?.length){
+    return window.CLOUD_TOPICS;
+  }
+  return LS.get(
+    "vp2_topics",
+    DEFAULT_TOPICS
+  );
+}
 function saveTopics(v){LS.set("vp2_topics",v);}
 function getQs(){
 
