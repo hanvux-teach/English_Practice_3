@@ -1441,7 +1441,7 @@ function speak(w){
   const u=new SpeechSynthesisUtterance(w);u.lang="en-US";u.rate=0.85;
   window.speechSynthesis.speak(u);
 }
-let currentAudio = null;
+
 function playQuestionAudio(audioUrl, text){
   if(audioUrl){
     window.speechSynthesis.cancel();
