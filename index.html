@@ -965,6 +965,7 @@ async function saveQ(){
 // ── CSV Import ──
 function openCsvModal(){document.getElementById("csv-file").value="";document.getElementById("csv-preview").textContent="";document.getElementById("csv-err").classList.remove("on");openMod("modal-csv");}
 async function importCSV(){
+  console.log("CSV VERSION 999");
   const file=document.getElementById("csv-file").files[0];
   if(!file){document.getElementById("csv-err").classList.add("on");return;}
   const reader=new FileReader();
