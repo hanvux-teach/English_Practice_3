@@ -707,9 +707,7 @@ async function setScore(user,topicId,pct){
         x.student === user &&
         x.topicId === topicId
     );
-  
   if(existing){
-  
     await window.fb.updateDoc(
       window.fb.doc(
         window.db,
@@ -717,18 +715,14 @@ async function setScore(user,topicId,pct){
         existing.firestoreId
       ),
       {
-        best: Math.max(
-          existing.best || 0,
-          pct
-        ),
-        attempts:
-          (existing.attempts || 0) + 1,
+        best: Math.max(existing.best || 0,pct),
+        attempts:(existing.attempts || 0) + 1,
         last:pct
       }
     );
-  
+
   }else{
-  
+
     await window.fb.addDoc(
       window.fb.collection(
         window.db,
@@ -742,8 +736,10 @@ async function setScore(user,topicId,pct){
         last:pct
       }
     );
-  
+
   }
+
+}
 // ══════ STATE ══════
 let currentUser=null;
 let quizQueue=[],quizIdx=0,quizCorrect=0,quizTopicId=null,isMix=false,mixCount=20;
