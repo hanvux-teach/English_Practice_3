@@ -228,7 +228,7 @@ onSnapshot(
 
     console.log(
       "Cloud questions:",
-      CLOUD_QS.length
+      window.CLOUD_QS.length
     );
   }
 );
@@ -241,9 +241,7 @@ window.fb = {
   updateDoc,
   deleteDoc,
   doc,
-  onSnapshot,
-  query,
-  where
+  onSnapshot
 };
 
 window.importQuestions = async function(){
@@ -603,7 +601,12 @@ function getQs(){
   if(window.CLOUD_QS?.length){
     return window.CLOUD_QS;
   }
-  return LS.get("vp2_questions",DEFAULT_QUESTIONS);}
+
+  return LS.get(
+    "vp2_questions",
+    DEFAULT_QUESTIONS
+  );
+}
 function saveQs(v){LS.set("vp2_questions",v);}
 function getStudents(){return LS.get("vp2_students",DEFAULT_STUDENTS);}
 function saveStudents(v){LS.set("vp2_students",v);}
