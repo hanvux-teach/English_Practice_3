@@ -228,7 +228,6 @@ onSnapshot(
       "Cloud questions:",
       CLOUD_QS.length
     );
-
   }
 );
 
@@ -241,6 +240,25 @@ window.fb = {
   deleteDoc,
   doc,
   onSnapshot
+};
+window.importQuestions = async function(){
+
+  let count = 0;
+
+  for(const q of DEFAULT_QUESTIONS){
+
+    await addDoc(
+      collection(db,"questions"),
+      q
+    );
+
+    count++;
+  }
+
+  console.log(
+    "Imported:",
+    count
+  );
 };
 </script>
 <body>
