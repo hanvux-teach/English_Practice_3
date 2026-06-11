@@ -247,9 +247,10 @@ onSnapshot(
       "Cloud topics:",
       window.CLOUD_TOPICS.length
     );
-
+    renderTopicGrid?.();
   }
 );
+  
 window.CLOUD_STUDENTS = [];
 onSnapshot(
   collection(db,"students"),
@@ -265,6 +266,8 @@ onSnapshot(
       "Cloud students:",
       window.CLOUD_STUDENTS.length
     );
+
+    populateStudentSel();
 
   }
 );
@@ -284,7 +287,7 @@ onSnapshot(
       "Cloud scores:",
       CLOUD_SCORES.length
     );
-
+    renderStats?.();
   }
 );
 window.db = db;
