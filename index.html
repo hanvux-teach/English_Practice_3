@@ -249,7 +249,25 @@ onSnapshot(
     );
 
   }
-);  
+);
+window.CLOUD_STUDENTS = [];
+onSnapshot(
+  collection(db,"students"),
+  snap => {
+
+    window.CLOUD_STUDENTS =
+      snap.docs.map(d => ({
+        firestoreId:d.id,
+        ...d.data()
+      }));
+
+    console.log(
+      "Cloud students:",
+      window.CLOUD_STUDENTS.length
+    );
+
+  }
+);
 window.db = db;
 window.fb = {
   collection,
@@ -633,7 +651,17 @@ function getQs(){
   );
 }
 function saveQs(v){LS.set("vp2_questions",v);}
-function getStudents(){return LS.get("vp2_students",DEFAULT_STUDENTS);}
+function getStudents(){
+
+  if(window.CLOUD_STUDENTS?.length){
+    return window.CLOUD_STUDENTS;
+  }
+
+  return LS.get(
+    "vp2_students",
+    DEFAULT_STUDENTS
+  );
+}
 function saveStudents(v){LS.set("vp2_students",v);}
 function getScores(){return LS.get("vp2_scores",{});}
 function saveScores(v){LS.set("vp2_scores",v);}
