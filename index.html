@@ -196,7 +196,9 @@ import {
   updateDoc,
   deleteDoc,
   doc,
-  onSnapshot
+  onSnapshot,
+  query,
+  where
 } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -220,7 +222,7 @@ onSnapshot(
   snap => {
 
     CLOUD_QS = snap.docs.map(d => ({
-      id:d.id,
+      firestoreId: d.id,
       ...d.data()
     }));
 
@@ -239,7 +241,9 @@ window.fb = {
   updateDoc,
   deleteDoc,
   doc,
-  onSnapshot
+  onSnapshot,
+  query,
+  where
 };
 
 window.importQuestions = async function(){
