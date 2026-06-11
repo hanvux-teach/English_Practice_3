@@ -1153,26 +1153,57 @@ function renderStudentList(){
     </tr>`).join("")}</tbody>
   </table>`;
 }
-function addStudent(){
+async function addStudent(){
   const name=document.getElementById("new-name").value.trim();
   const pin=document.getElementById("new-pin").value.trim();
   const err=document.getElementById("add-err");
   if(!name||!/^\d{4}$/.test(pin)){err.classList.add("on");return;}
   const students=getStudents();
-  if(students.find(s=>s.name===name)){err.classList.add("on");return;}
-  err.classList.remove("on");
-  students.push({name,pin});
-  saveStudents(students);
+    if(students.find(s=>s.name===name)){
+      err.classList.add("on");
+      return;
+    }
+    err.classList.remove("on");
+    
+    await window.fb.addDoc(
+      window.fb.collection(
+        window.db,
+        "students"
+      ),
+      {
+        name,
+        pin
+      }
+    );
   document.getElementById("new-name").value="";
   document.getElementById("new-pin").value="";
   renderStudentList();
   populateStudentSel();
 }
-function deleteStudent(name){
-  if(!confirm("Xóa học sinh '"+name+"' và toàn bộ điểm số?"))return;
-  saveStudents(getStudents().filter(s=>s.name!==name));
-  const sc=getScores();Object.keys(sc).filter(k=>k.startsWith(name+"__")).forEach(k=>delete sc[k]);saveScores(sc);
-  renderStudentList();populateStudentSel();
+async function deleteStudent(name){
+  if(!confirm(
+    "Xóa học sinh '"+name+"' và toàn bộ điểm số?"
+  )) return;
+  
+  const student =
+    getStudents().find(
+      s => s.name === name
+    );
+  
+  if(student?.firestoreId){
+  
+    await window.fb.deleteDoc(
+      window.fb.doc(
+        window.db,
+        "students",
+        student.firestoreId
+      )
+    );
+  
+  }
+  
+  renderStudentList();
+  populateStudentSel();
 }
 function resetAllScores(){if(!confirm("Xóa toàn bộ điểm số?"))return;saveScores({});alert("Đã xóa.");}
 
