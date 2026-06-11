@@ -268,6 +268,25 @@ onSnapshot(
 
   }
 );
+
+window.CLOUD_SCORES = [];
+onSnapshot(
+  collection(db,"scores"),
+  snap => {
+
+    window.CLOUD_SCORES =
+      snap.docs.map(d => ({
+        firestoreId:d.id,
+        ...d.data()
+      }));
+
+    console.log(
+      "Cloud scores:",
+      CLOUD_SCORES.length
+    );
+
+  }
+);
 window.db = db;
 window.fb = {
   collection,
@@ -666,9 +685,65 @@ function saveStudents(v){LS.set("vp2_students",v);}
 function getScores(){return LS.get("vp2_scores",{});}
 function saveScores(v){LS.set("vp2_scores",v);}
 function getTeacherPw(){return LS.get("vp2_tpw",DEFAULT_TEACHER_PW);}
-function getScore(user,topicId){const s=getScores();const k=user+"__"+topicId;return s[k]||{best:0,attempts:0,last:0};}
-function setScore(user,topicId,pct){const s=getScores();const k=user+"__"+topicId;const c=s[k]||{best:0,attempts:0,last:0};s[k]={best:Math.max(c.best,pct),attempts:c.attempts+1,last:pct};saveScores(s);}
+function getScore(user,topicId){
 
+  const row =
+    window.CLOUD_SCORES?.find(
+      x =>
+        x.student === user &&
+        x.topicId === topicId
+    );
+
+  return row || {
+    best:0,
+    attempts:0,
+    last:0
+  };
+}
+async function setScore(user,topicId,pct){
+  const existing =
+    window.CLOUD_SCORES?.find(
+      x =>
+        x.student === user &&
+        x.topicId === topicId
+    );
+  
+  if(existing){
+  
+    await window.fb.updateDoc(
+      window.fb.doc(
+        window.db,
+        "scores",
+        existing.firestoreId
+      ),
+      {
+        best: Math.max(
+          existing.best || 0,
+          pct
+        ),
+        attempts:
+          (existing.attempts || 0) + 1,
+        last:pct
+      }
+    );
+  
+  }else{
+  
+    await window.fb.addDoc(
+      window.fb.collection(
+        window.db,
+        "scores"
+      ),
+      {
+        student:user,
+        topicId,
+        best:pct,
+        attempts:1,
+        last:pct
+      }
+    );
+  
+  }
 // ══════ STATE ══════
 let currentUser=null;
 let quizQueue=[],quizIdx=0,quizCorrect=0,quizTopicId=null,isMix=false,mixCount=20;
@@ -1412,9 +1487,13 @@ function showFB(ok,ans){
   fb.className="fb on "+(ok?"ok":"bad");
   fb.textContent=ok?"🎉 Chính xác!":"❌ Sai! Đáp án: "+ans;
 }
-function showResult(){
+async function showResult(){
   const total=quizQueue.length;const pct=Math.round(quizCorrect/total*100);
-  setScore(currentUser,quizTopicId,pct);
+  await setScore(
+    currentUser,
+    quizTopicId,
+    pct
+  );
   document.getElementById("qpfill").style.width="100%";
   const stars=pct>=90?"⭐⭐⭐":pct>=70?"⭐⭐":"⭐";
   const msg=pct>=90?"Xuất sắc!":pct>=70?"Tốt lắm!":pct>=50?"Cần ôn thêm một chút!":"Xem lại và thử lại nhé!";
