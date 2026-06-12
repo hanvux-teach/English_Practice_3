@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="vi">
 <head>
@@ -185,6 +184,12 @@ textarea.inp{resize:vertical;min-height:70px}
 .fill-blank.ok{color:var(--teal);border-bottom-color:var(--teal)}
 .fill-blank.bad{color:var(--red);border-bottom-color:var(--red)}
 .fill-blank:disabled{cursor:default}
+
+/* underline toolbar for phonics */
+.u-toolbar{display:flex;align-items:center;gap:8px;margin-bottom:4px}
+.u-btn{padding:3px 10px;border:1.5px solid var(--pur-m);border-radius:var(--rs);background:var(--pur-l);color:var(--pur-d);cursor:pointer;font-size:14px;font-weight:700;text-decoration:underline;line-height:1}
+.u-btn:hover{background:var(--pur);color:#fff}
+.u-hint{font-size:11px;color:var(--tx3)}
 
 /* image option buttons */
 .img-opts{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
@@ -970,7 +975,7 @@ async function deleteQ(id){
 // ── Question form per type ──
 const Q_FORMS={
   mcq:`<label class="lbl">Câu hỏi / Từ tiếng Việt</label>
-    <input class="inp" id="qf-prompt" placeholder="Câu hỏi hoặc từ cần dịch">
+    <textarea class="inp" id="qf-prompt" rows="3" placeholder="Câu hỏi hoặc từ cần dịch&#10;(có thể xuống dòng để viết đoạn văn)"></textarea>
     <label class="lbl">Đáp án đúng</label>
     <input class="inp" id="qf-answer" placeholder="correct answer">
     <label class="lbl">Các lựa chọn (phân cách bằng dấu phẩy, gồm đáp án đúng)</label>
@@ -993,11 +998,14 @@ const Q_FORMS={
     <input class="inp" id="qf-extra" placeholder="Con mèo đang ngủ trên ghế sofa.">
     <input type="hidden" id="qf-opts" value="">`,
   phonics:`<label class="lbl">Câu hỏi (Từ nào có âm... / Từ nào khác âm...)</label>
-    <input class="inp" id="qf-prompt" placeholder="Từ nào có âm /æ/ giống 'cat'?">
+    <div class="u-toolbar"><button type="button" class="u-btn" onclick="wrapUnderline('qf-prompt')" title="Gạch chân">U̲</button><span class="u-hint">Bôi đen chữ → nhấn nút để gạch chân</span></div>
+    <textarea class="inp" id="qf-prompt" rows="2" placeholder="Từ nào có âm /æ/ giống 'cat'?"></textarea>
     <label class="lbl">Đáp án đúng</label>
-    <input class="inp" id="qf-answer" placeholder="rabbit">
-    <label class="lbl">Các lựa chọn (phân cách bằng dấu phẩy, gồm đáp án đúng)</label>
-    <input class="inp" id="qf-opts" placeholder="rabbit, bear, bird, lion">
+    <div class="u-toolbar"><button type="button" class="u-btn" onclick="wrapUnderline('qf-answer')" title="Gạch chân">U̲</button></div>
+    <input class="inp" id="qf-answer" placeholder="r&#x0332;a&#x0332;b&#x0332;b&#x0332;i&#x0332;t&#x0332; hoặc <u>rabbit</u>">
+    <label class="lbl">Các lựa chọn (phân cách bằng dấu phẩy, gồm đáp án đúng — dùng &lt;u&gt;text&lt;/u&gt; để gạch chân)</label>
+    <div class="u-toolbar"><button type="button" class="u-btn" onclick="wrapUnderline('qf-opts')" title="Gạch chân">U̲</button></div>
+    <textarea class="inp" id="qf-opts" rows="2" placeholder="r&lt;u&gt;a&lt;/u&gt;bbit, b&lt;u&gt;ea&lt;/u&gt;r, b&lt;u&gt;i&lt;/u&gt;rd, l&lt;u&gt;io&lt;/u&gt;n"></textarea>
     <input type="hidden" id="qf-extra" value="">`,
   listen:`<label class="lbl">Đáp án đúng</label>
   <input class="inp" id="qf-answer" placeholder="rabbit">
@@ -1053,7 +1061,7 @@ const Q_FORMS={
   <label class="lbl">Nhãn đáp án đúng</label>
   <input class="inp" id="qf-extra" placeholder="cat">`,
   tf:`<label class="lbl">Câu tiếng Anh (đúng hoặc sai)</label>
-    <input class="inp" id="qf-prompt" placeholder="Elephants can fly.">
+    <textarea class="inp" id="qf-prompt" rows="3" placeholder="Elephants can fly.&#10;(có thể xuống dòng để viết đoạn văn, rồi xuống dòng ghi câu hỏi)"></textarea>
     <label class="lbl">Câu này đúng hay sai?</label>
     <select class="inp" id="qf-answer"><option value="True">True — Đúng</option><option value="False">False — Sai</option></select>
     <label class="lbl">Giải thích (tuỳ chọn)</label>
@@ -1367,7 +1375,7 @@ function renderQ(){
   if(q.type==="mcq"||q.type==="odd")body.innerHTML=renderMCQ(q);
   else if(q.type==="fill"){body.innerHTML=renderFill(q);setTimeout(()=>{const fi=document.getElementById("fi");if(fi)fi.focus();},50);}
   else if(q.type==="arrange"){body.innerHTML=renderArrange(q);arrangeState={placed:[],bank:shuffled(q.answer.split(" "))||[]};renderArrState();}
-  else if(q.type==="phonics")body.innerHTML=renderPhon(q);
+  else if(q.type==="phonics"){body.innerHTML=renderPhon(q);document.querySelectorAll(".phobt").forEach(b=>{const m=b.getAttribute("onclick").match(/checkPhon\(this,(.+?),(.+?)\)/);if(m){try{b._phVal=JSON.parse(m[1]);}catch(e){}}});}
   else if(q.type==="listen")body.innerHTML=renderListen(q);
   else if(q.type==="listen-tf")body.innerHTML=renderListenTF(q);
   else if(q.type==="listen-fill"){body.innerHTML=renderListenFill(q);setTimeout(()=>{const fi=document.getElementById("fi");if(fi)fi.focus();},50);}
@@ -1382,7 +1390,8 @@ function nextQ(){quizIdx++;renderQ();}
 // Render helpers
 function renderMCQ(q){
   const opts=q.opts&&q.opts.length?shuffled(q.opts):shuffled([q.answer]);
-  return `<div class="qbox">${esc(q.prompt)}<span class="qsub">${q.extra?esc(q.extra):""}</span></div>
+  const promptHtml=esc(q.prompt).replace(/\n/g,"<br>");
+  return `<div class="qbox">${promptHtml}<span class="qsub">${q.extra?esc(q.extra):""}</span></div>
     <div class="opts">${opts.map(o=>`<button class="obt" onclick="checkMCQ(this,'${esc(o)}','${esc(q.answer)}')">${esc(o)}</button>`).join("")}</div>
     <div class="fb" id="fb"></div>
     <button class="nxbt" id="nb" onclick="nextQ()"></button>`;
@@ -1454,18 +1463,32 @@ function checkArr(){
   showFB(ok,q.answer);if(ok)quizCorrect++;
   const nb=document.getElementById("nb");if(nb){nb.textContent=quizIdx+1<quizQueue.length?"Câu tiếp theo →":"Xem kết quả →";nb.classList.add("on");}
 }
+function wrapUnderline(fieldId){
+  const el=document.getElementById(fieldId);
+  if(!el)return;
+  const start=el.selectionStart,end=el.selectionEnd;
+  if(start===end){alert("Bôi đen chữ cần gạch chân trước!");return;}
+  const sel=el.value.slice(start,end);
+  const before=el.value.slice(0,start);
+  const after=el.value.slice(end);
+  el.value=before+"<u>"+sel+"</u>"+after;
+  el.selectionStart=start;el.selectionEnd=end+7;
+  el.focus();
+}
 function renderPhon(q){
   const opts=q.opts&&q.opts.length?shuffled(q.opts):shuffled([q.answer]);
-  return `<div class="qbox">${esc(q.prompt)}</div>
-    <div class="phonopts">${opts.map(o=>`<button class="phobt" onclick="checkPhon(this,'${esc(o)}','${esc(q.answer)}')">${esc(o)}</button>`).join("")}</div>
+  // Allow <u> tags only — sanitize other HTML
+  function safeHtml(s){return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/&lt;u&gt;/g,"<u>").replace(/&lt;\/u&gt;/g,"</u>");}
+  return `<div class="qbox">${safeHtml(q.prompt)}</div>
+    <div class="phonopts">${opts.map(o=>`<button class="phobt" onclick="checkPhon(this,${JSON.stringify(o)},${JSON.stringify(q.answer)})">${safeHtml(o)}</button>`).join("")}</div>
     <div class="fb" id="fb"></div>
     <button class="nxbt" id="nb" onclick="nextQ()"></button>`;
 }
 function checkPhon(btn,c,a){
   document.querySelectorAll(".phobt").forEach(b=>b.disabled=true);
   const ok=c===a;btn.classList.add(ok?"ok":"bad");
-  if(!ok)document.querySelectorAll(".phobt").forEach(b=>{if(b.textContent.trim()===a)b.classList.add("ok");});
-  showFB(ok,a);if(ok)quizCorrect++;
+  if(!ok)document.querySelectorAll(".phobt").forEach(b=>{if(b._phVal===a)b.classList.add("ok");});
+  showFB(ok,a.replace(/<u>/g,"").replace(/<\/u>/g,""));if(ok)quizCorrect++;
   const nb=document.getElementById("nb");if(nb){nb.textContent=quizIdx+1<quizQueue.length?"Câu tiếp theo →":"Xem kết quả →";nb.classList.add("on");}
 }
 function renderListen(q){
@@ -1535,7 +1558,8 @@ function playQuestionAudio(audioUrl, text){
   }
 }
 function renderTF(q){
-  return `<div class="qbox" style="font-size:16px">${esc(q.prompt)}<div style="font-size:18px;font-weight:700;margin-top:10px">"${esc(q.prompt)}"</div><span class="qsub">${q.extra?esc(q.extra):""}</span></div>
+  const promptHtml=esc(q.prompt).replace(/\n/g,"<br>");
+  return `<div class="qbox" style="font-size:16px">${promptHtml}<span class="qsub">${q.extra?esc(q.extra):""}</span></div>
     <div class="tfopts">
       <button class="tfbt" style="color:var(--teal)" onclick="checkTF(this,'True','${esc(q.answer)}')">✓ True</button>
       <button class="tfbt" style="color:var(--red)" onclick="checkTF(this,'False','${esc(q.answer)}')">✗ False</button>
@@ -1600,7 +1624,6 @@ function renderImgMCQ(q){
   return `<div class="qbox">${esc(q.prompt)}</div>
   <div class="img-opts">${opts.map(o=>`<button class="img-obt" onclick="checkImgMCQ(this,'${esc(o)}','${esc(q.answer)}','${esc(correctLabel)}')">
     <img src="${esc(o)}" alt="" onerror="this.style.display='none'">
-    <div class="img-lbl">&nbsp;</div>
   </button>`).join("")}</div>
   <div class="fb" id="fb"></div>
   <button class="nxbt" id="nb" onclick="nextQ()"></button>`;
@@ -1608,7 +1631,6 @@ function renderImgMCQ(q){
 function checkImgMCQ(btn,c,a,label){
   document.querySelectorAll(".img-obt").forEach(b=>b.disabled=true);
   const ok=c===a;btn.classList.add(ok?"ok":"bad");
-  btn.querySelector(".img-lbl").textContent=label;
   if(!ok)document.querySelectorAll(".img-obt").forEach(b=>{if(b.onclick&&b.getAttribute("onclick")&&b.getAttribute("onclick").includes("'"+a.replace(/'/g,"&#39;")+"'"))b.classList.add("ok");});
   showFB(ok,label);if(ok)quizCorrect++;
   const nb=document.getElementById("nb");if(nb){nb.textContent=quizIdx+1<quizQueue.length?"Câu tiếp theo →":"Xem kết quả →";nb.classList.add("on");}
@@ -1621,7 +1643,6 @@ function renderReadImg(q){
   return `<div class="qbox">${esc(q.prompt)}</div>
   <div class="img-opts">${opts.map(o=>`<button class="img-obt" onclick="checkImgMCQ(this,'${esc(o)}','${esc(q.answer)}','${esc(correctLabel)}')">
     <img src="${esc(o)}" alt="" onerror="this.style.display='none'">
-    <div class="img-lbl">&nbsp;</div>
   </button>`).join("")}</div>
   <div class="fb" id="fb"></div>
   <button class="nxbt" id="nb" onclick="nextQ()"></button>`;
@@ -1640,7 +1661,6 @@ function renderListenImg(q){
   </div>
   <div class="img-opts">${opts.map(o=>`<button class="img-obt" onclick="checkImgMCQ(this,'${esc(o)}','${esc(q.answer)}','${esc(correctLabel)}')">
     <img src="${esc(o)}" alt="" onerror="this.style.display='none'">
-    <div class="img-lbl">&nbsp;</div>
   </button>`).join("")}</div>
   <div class="fb" id="fb"></div>
   <button class="nxbt" id="nb" onclick="nextQ()"></button>`;
