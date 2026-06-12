@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>VocabPro</title>
+<title>English Practice Exercises</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -178,9 +178,32 @@ textarea.inp{resize:vertical;min-height:70px}
 /* empty state */
 .empty{text-align:center;padding:32px 16px;color:var(--tx3);font-size:14px}
 
+/* inline fill-in-blank */
+.fill-sentence{font-size:17px;font-weight:500;text-align:center;padding:18px 14px;background:var(--surf2);border-radius:var(--r);margin-bottom:16px;line-height:2;word-break:break-word}
+.fill-blank{display:inline-block;border:none;border-bottom:2.5px solid var(--pur);background:transparent;font-size:17px;font-weight:700;color:var(--pur);text-align:center;outline:none;padding:0 4px;min-width:40px;transition:.15s;border-radius:0}
+.fill-blank:focus{border-bottom-color:var(--pur-d)}
+.fill-blank.ok{color:var(--teal);border-bottom-color:var(--teal)}
+.fill-blank.bad{color:var(--red);border-bottom-color:var(--red)}
+.fill-blank:disabled{cursor:default}
+
+/* image option buttons */
+.img-opts{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
+.img-obt{border:2.5px solid var(--bord);border-radius:var(--rs);background:var(--surf);cursor:pointer;padding:6px;transition:.15s;overflow:hidden}
+.img-obt:hover:not(:disabled){border-color:var(--pur-m);background:var(--pur-l)}
+.img-obt.ok{border-color:var(--grn);background:var(--grn-l)}
+.img-obt.bad{border-color:var(--red);background:var(--red-l)}
+.img-obt img{width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:4px;display:block}
+.img-obt .img-lbl{font-size:12px;text-align:center;margin-top:5px;color:var(--tx2);font-weight:500}
+
+/* listen sub-type badge */
+.listen-sub-badge{display:inline-block;font-size:11px;font-weight:700;padding:2px 9px;border-radius:12px;background:var(--amb-l);color:var(--amb);margin-bottom:10px}
+
+/* image in question box */
+.qimg{width:100%;max-height:180px;object-fit:cover;border-radius:var(--rs);margin-bottom:10px;display:block}
+
 /* responsive */
 @media(max-width:500px){
-  .opts,.phonopts,.tfopts{grid-template-columns:1fr}
+  .opts,.phonopts,.tfopts,.img-opts{grid-template-columns:1fr}
   .tgrid{grid-template-columns:repeat(2,1fr)}
   .sgrid{grid-template-columns:repeat(3,1fr)}
 }
@@ -403,7 +426,8 @@ window.importQuestions = async function(){
         <select class="inp" id="q-filter-type" onchange="renderQTable()" style="max-width:140px">
           <option value="">Tất cả dạng</option>
           <option>mcq</option><option>fill</option><option>arrange</option>
-          <option>phonics</option><option>listen</option><option>tf</option><option>odd</option>
+          <option>phonics</option><option>listen</option><option>listen-tf</option><option>listen-fill</option>
+          <option>tf</option><option>odd</option><option>img-mcq</option><option>read-img</option><option>listen-img</option>
         </select>
         <input class="inp" id="q-search" placeholder="Tìm câu hỏi..." oninput="renderQTable()" style="max-width:200px">
       </div>
@@ -519,12 +543,17 @@ window.importQuestions = async function(){
     <label class="lbl">Dạng bài</label>
     <select class="inp" id="mq-type" onchange="renderQForm()">
       <option value="mcq">MCQ — Chọn đáp án đúng</option>
-      <option value="fill">Fill — Điền từ còn thiếu</option>
+      <option value="fill">Fill — Điền thẳng vào câu</option>
       <option value="arrange">Arrange — Sắp xếp câu</option>
       <option value="phonics">Phonics — Phiên âm</option>
-      <option value="listen">Listen — Nghe và chọn</option>
+      <option value="listen">Listen MCQ — Nghe và chọn</option>
+      <option value="listen-tf">Listen TF — Nghe đúng/sai</option>
+      <option value="listen-fill">Listen Fill — Nghe điền từ</option>
       <option value="tf">True/False — Đúng hay sai</option>
       <option value="odd">Odd one out — Từ khác loại</option>
+      <option value="img-mcq">Image MCQ — Chọn ảnh đúng</option>
+      <option value="read-img">Read + Image — Đọc chọn ảnh</option>
+      <option value="listen-img">Listen + Image — Nghe chọn ảnh</option>
     </select>
     <div id="q-form-body"></div>
     <div class="err-msg" id="mq-err">Vui lòng điền đầy đủ!</div>
@@ -563,7 +592,7 @@ window.importQuestions = async function(){
 </div><!-- /app -->
 <script>
 // ══════ DEFAULTS ══════
-const DEFAULT_TEACHER_PW = "teacher123";
+const DEFAULT_TEACHER_PW = "Hahahuhu111";
 
 // ══════ STORAGE ══════
 const LS={
@@ -994,8 +1023,51 @@ const Q_FORMS={
   <input class="inp" id="qf-prompt" value="Nghe và chọn từ đúng">
   <label class="lbl">Các lựa chọn</label>
   <input class="inp" id="qf-opts" placeholder="rabbit, cat, dog, fish">
-  
   <input type="hidden" id="qf-extra" value="">`,
+  "listen-tf":`<label class="lbl">Audio URL</label>
+  <input class="inp" id="qf-audio" placeholder="https://....mp3">
+  <label class="lbl">Câu phát biểu (đúng hoặc sai)</label>
+  <input class="inp" id="qf-prompt" placeholder="The cat is sleeping.">
+  <label class="lbl">Câu này đúng hay sai?</label>
+  <select class="inp" id="qf-answer"><option value="True">True — Đúng</option><option value="False">False — Sai</option></select>
+  <label class="lbl">Giải thích (tuỳ chọn)</label>
+  <input class="inp" id="qf-extra" placeholder="">
+  <input type="hidden" id="qf-opts" value="True,False">`,
+  "listen-fill":`<label class="lbl">Audio URL</label>
+  <input class="inp" id="qf-audio" placeholder="https://....mp3">
+  <label class="lbl">Câu có chỗ trống (dùng ___ thay chỗ trống)</label>
+  <input class="inp" id="qf-prompt" placeholder="The ___ is sleeping.">
+  <label class="lbl">Đáp án đúng</label>
+  <input class="inp" id="qf-answer" placeholder="cat">
+  <label class="lbl">Dịch nghĩa (tuỳ chọn)</label>
+  <input class="inp" id="qf-extra" placeholder="">
+  <input type="hidden" id="qf-opts" value="">`,
+  "img-mcq":`<label class="lbl">Câu hỏi / Từ tiếng Việt</label>
+  <input class="inp" id="qf-prompt" placeholder="Con mèo là gì?">
+  <label class="lbl">Đáp án đúng (URL ảnh)</label>
+  <input class="inp" id="qf-answer" placeholder="https://....jpg">
+  <label class="lbl">URL ảnh các lựa chọn (phân cách bằng dấu phẩy, gồm đáp án)</label>
+  <input class="inp" id="qf-opts" placeholder="https://cat.jpg, https://dog.jpg, https://bird.jpg">
+  <label class="lbl">Nhãn đáp án đúng (tên hiển thị bên dưới ảnh)</label>
+  <input class="inp" id="qf-extra" placeholder="cat">`,
+  "read-img":`<label class="lbl">Câu hỏi / Đoạn đọc</label>
+  <input class="inp" id="qf-prompt" placeholder="Which animal has stripes?">
+  <label class="lbl">Đáp án đúng (URL ảnh)</label>
+  <input class="inp" id="qf-answer" placeholder="https://....jpg">
+  <label class="lbl">URL ảnh các lựa chọn (phân cách bằng dấu phẩy)</label>
+  <input class="inp" id="qf-opts" placeholder="https://tiger.jpg, https://cat.jpg, https://lion.jpg">
+  <label class="lbl">Nhãn đáp án đúng</label>
+  <input class="inp" id="qf-extra" placeholder="tiger">`,
+  "listen-img":`<label class="lbl">Audio URL</label>
+  <input class="inp" id="qf-audio" placeholder="https://....mp3">
+  <label class="lbl">Hướng dẫn</label>
+  <input class="inp" id="qf-prompt" value="Nghe và chọn ảnh đúng">
+  <label class="lbl">Đáp án đúng (URL ảnh)</label>
+  <input class="inp" id="qf-answer" placeholder="https://....jpg">
+  <label class="lbl">URL ảnh các lựa chọn (phân cách bằng dấu phẩy)</label>
+  <input class="inp" id="qf-opts" placeholder="https://cat.jpg, https://dog.jpg, https://bird.jpg">
+  <label class="lbl">Nhãn đáp án đúng</label>
+  <input class="inp" id="qf-extra" placeholder="cat">`,
   tf:`<label class="lbl">Câu tiếng Anh (đúng hoặc sai)</label>
     <input class="inp" id="qf-prompt" placeholder="Elephants can fly.">
     <label class="lbl">Câu này đúng hay sai?</label>
@@ -1034,6 +1106,7 @@ function openQModal(id){
       const fo=document.getElementById("qf-opts");if(fo&&fo.type!=="hidden")fo.value=(q.opts||[]).join(", ");
       const fe=document.getElementById("qf-extra");if(fe&&fe.type!=="hidden")fe.value=q.extra||"";
       const faud=document.getElementById("qf-audio");if(faud) faud.value=q.audioUrl||"";
+      const flsub=document.getElementById("qf-lsub");if(flsub) flsub.value=q.listenSub||"mcq";
     },10);
   }
   openMod("modal-q");
@@ -1304,16 +1377,20 @@ function renderQ(){
   document.getElementById("q-ctr").textContent=(quizIdx+1)+" / "+total;
   document.getElementById("q-live").textContent="✓ "+quizCorrect;
   document.getElementById("qpfill").style.width=(quizIdx/total*100)+"%";
-  const labels={mcq:"Từ vựng",fill:"Điền từ",arrange:"Sắp xếp câu",phonics:"Phiên âm",listen:"Bài nghe",tf:"Đúng / Sai",odd:"Odd one out"};
+  const labels={mcq:"Từ vựng",fill:"Điền từ",arrange:"Sắp xếp câu",phonics:"Phiên âm",listen:"Bài nghe","listen-tf":"Nghe Đúng/Sai","listen-fill":"Nghe Điền từ",tf:"Đúng / Sai",odd:"Odd one out","img-mcq":"Chọn ảnh","read-img":"Đọc + Ảnh","listen-img":"Nghe + Ảnh"};
   document.getElementById("qt-badge").textContent=labels[q.type]||q.type;
   const body=document.getElementById("quiz-body");
-  const nx=`<button class="nxbt on" onclick="nextQ()">${quizIdx+1<quizQueue.length?"Câu tiếp theo →":"Xem kết quả →"}</button>`;
   if(q.type==="mcq"||q.type==="odd")body.innerHTML=renderMCQ(q);
-  else if(q.type==="fill")body.innerHTML=renderFill(q);
+  else if(q.type==="fill"){body.innerHTML=renderFill(q);setTimeout(()=>{const fi=document.getElementById("fi");if(fi)fi.focus();},50);}
   else if(q.type==="arrange"){body.innerHTML=renderArrange(q);arrangeState={placed:[],bank:shuffled(q.answer.split(" "))||[]};renderArrState();}
   else if(q.type==="phonics")body.innerHTML=renderPhon(q);
   else if(q.type==="listen")body.innerHTML=renderListen(q);
+  else if(q.type==="listen-tf")body.innerHTML=renderListenTF(q);
+  else if(q.type==="listen-fill"){body.innerHTML=renderListenFill(q);setTimeout(()=>{const fi=document.getElementById("fi");if(fi)fi.focus();},50);}
   else if(q.type==="tf")body.innerHTML=renderTF(q);
+  else if(q.type==="img-mcq")body.innerHTML=renderImgMCQ(q);
+  else if(q.type==="read-img")body.innerHTML=renderReadImg(q);
+  else if(q.type==="listen-img")body.innerHTML=renderListenImg(q);
   else body.innerHTML=renderMCQ(q);
 }
 function nextQ(){quizIdx++;renderQ();}
@@ -1334,19 +1411,35 @@ function checkMCQ(btn,c,a){
   const nb=document.getElementById("nb");if(nb){nb.textContent=quizIdx+1<quizQueue.length?"Câu tiếp theo →":"Xem kết quả →";nb.classList.add("on");}
 }
 function renderFill(q){
-  return `<div class="qbox">${esc(q.prompt)}<span class="qsub">${q.extra?esc(q.extra):""}</span></div>
-    <div class="hint-lbl">Chọn từ bên dưới hoặc gõ trực tiếp</div>
-    <input class="fill-i" id="fi" placeholder="Nhập từ còn thiếu..." onkeydown="if(event.key==='Enter')checkFill()">
-    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">${(q.opts&&q.opts.length?shuffled(q.opts):[q.answer]).map(o=>`<span class="wchip" onclick="document.getElementById('fi').value='${esc(o)}'">${esc(o)}</span>`).join("")}</div>
-    <button class="btn btn-pur" onclick="checkFill()">Kiểm tra</button>
+  // Build sentence with inline input replacing ___
+  const ans=q.answer||"";
+  const maxLen=Math.max(ans.length,3);
+  const width=Math.max(maxLen*13,50);
+  const parts=(q.prompt||"").split("___");
+  let sentenceHtml="";
+  if(parts.length>=2){
+    sentenceHtml=esc(parts[0])+`<input class="fill-blank" id="fi" maxlength="${maxLen}" style="width:${width}px" autocomplete="off" spellcheck="false" onkeydown="if(event.key==='Enter')checkFill()" oninput="
+  this.value=this.value.slice(0,${maxLen});
+  this.style.color=(this.value?'var(--pur)':'');
+">` +esc(parts.slice(1).join("___"));
+  }else{
+    sentenceHtml=esc(q.prompt||"")+` <input class="fill-blank" id="fi" maxlength="${maxLen}" style="width:${width}px" autocomplete="off" spellcheck="false" onkeydown="if(event.key==='Enter')checkFill()" oninput="
+  this.value=this.value.slice(0,${maxLen});
+  this.style.color=(this.value?'var(--pur)':'');
+">`;
+  }
+  return `<div class="fill-sentence">${sentenceHtml}</div>
+    ${q.extra?`<div class="hint-lbl">${esc(q.extra)}</div>`:""}
+    <button class="btn btn-pur" onclick="checkFill()" style="margin-bottom:10px">Kiểm tra</button>
     <div class="fb" id="fb"></div>
     <button class="nxbt" id="nb" onclick="nextQ()"></button>`;
 }
 function checkFill(){
   const fi=document.getElementById("fi");if(!fi||fi.disabled)return;
   const q=quizQueue[quizIdx];const ok=fi.value.trim().toLowerCase()===q.answer.toLowerCase();
-  fi.disabled=true;fi.classList.add(ok?"ok":"bad");
-  document.querySelectorAll(".wchip").forEach(b=>b.style.pointerEvents="none");
+  fi.disabled=true;
+  if(ok){fi.value=q.answer;fi.classList.add("ok");}
+  else{fi.classList.add("bad");setTimeout(()=>{if(!fi.disabled)return;fi.value=q.answer;fi.style.color="var(--teal)";},800);}
   showFB(ok,q.answer);if(ok)quizCorrect++;
   const nb=document.getElementById("nb");if(nb){nb.textContent=quizIdx+1<quizQueue.length?"Câu tiếp theo →":"Xem kết quả →";nb.classList.add("on");}
 }
@@ -1472,6 +1565,103 @@ function checkTF(btn,c,a){
   showFB(ok,"Đáp án: "+a);if(ok)quizCorrect++;
   const nb=document.getElementById("nb");if(nb){nb.textContent=quizIdx+1<quizQueue.length?"Câu tiếp theo →":"Xem kết quả →";nb.classList.add("on");}
 }
+// ══ Listen True/False ══
+function renderListenTF(q){
+  return `<div class="lbox">
+    <span class="listen-sub-badge">🎧 Nghe và đánh giá</span>
+    <p style="font-size:13px;color:var(--tx2);margin:8px 0 12px">${esc(q.prompt||"Nghe đoạn audio và chọn Đúng hoặc Sai")}</p>
+    <button class="lbtn" onclick="playQuestionAudio('${esc(q.audioUrl||"")}','${esc(q.answer)}')">
+      <svg viewBox="0 0 24 24" fill="white" width="20" height="20"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
+      Nghe
+    </button>
+  </div>
+  <div class="tfopts">
+    <button class="tfbt" style="color:var(--teal)" onclick="checkTF(this,'True','${esc(q.answer)}')">✓ True</button>
+    <button class="tfbt" style="color:var(--red)" onclick="checkTF(this,'False','${esc(q.answer)}')">✗ False</button>
+  </div>
+  <div class="fb" id="fb"></div>
+  <button class="nxbt" id="nb" onclick="nextQ()"></button>`;
+}
+
+// ══ Listen Fill ══
+function renderListenFill(q){
+  const ans=q.answer||"";
+  const maxLen=Math.max(ans.length,3);
+  const width=Math.max(maxLen*13,50);
+  const parts=(q.prompt||"").split("___");
+  let sentenceHtml="";
+  if(parts.length>=2){
+    sentenceHtml=esc(parts[0])+`<input class="fill-blank" id="fi" maxlength="${maxLen}" style="width:${width}px" autocomplete="off" spellcheck="false" onkeydown="if(event.key==='Enter')checkFill()">` +esc(parts.slice(1).join("___"));
+  }else{
+    sentenceHtml=`<input class="fill-blank" id="fi" maxlength="${maxLen}" style="width:${width}px" autocomplete="off" spellcheck="false" onkeydown="if(event.key==='Enter')checkFill()">`;
+  }
+  return `<div class="lbox">
+    <span class="listen-sub-badge">🎧 Nghe và điền từ</span>
+    <button class="lbtn" style="margin-top:10px" onclick="playQuestionAudio('${esc(q.audioUrl||"")}','${esc(q.answer)}')">
+      <svg viewBox="0 0 24 24" fill="white" width="20" height="20"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
+      Nghe
+    </button>
+  </div>
+  <div class="fill-sentence">${sentenceHtml}</div>
+  ${q.extra?`<div class="hint-lbl">${esc(q.extra)}</div>`:""}
+  <button class="btn btn-pur" onclick="checkFill()" style="margin-bottom:10px">Kiểm tra</button>
+  <div class="fb" id="fb"></div>
+  <button class="nxbt" id="nb" onclick="nextQ()"></button>`;
+}
+
+// ══ Image MCQ ══
+function renderImgMCQ(q){
+  const opts=q.opts&&q.opts.length?shuffled(q.opts):[];
+  const correctLabel=q.extra||q.answer;
+  return `<div class="qbox">${esc(q.prompt)}</div>
+  <div class="img-opts">${opts.map(o=>`<button class="img-obt" onclick="checkImgMCQ(this,'${esc(o)}','${esc(q.answer)}','${esc(correctLabel)}')">
+    <img src="${esc(o)}" alt="" onerror="this.style.display='none'">
+    <div class="img-lbl">&nbsp;</div>
+  </button>`).join("")}</div>
+  <div class="fb" id="fb"></div>
+  <button class="nxbt" id="nb" onclick="nextQ()"></button>`;
+}
+function checkImgMCQ(btn,c,a,label){
+  document.querySelectorAll(".img-obt").forEach(b=>b.disabled=true);
+  const ok=c===a;btn.classList.add(ok?"ok":"bad");
+  btn.querySelector(".img-lbl").textContent=label;
+  if(!ok)document.querySelectorAll(".img-obt").forEach(b=>{if(b.onclick&&b.getAttribute("onclick")&&b.getAttribute("onclick").includes("'"+a.replace(/'/g,"&#39;")+"'"))b.classList.add("ok");});
+  showFB(ok,label);if(ok)quizCorrect++;
+  const nb=document.getElementById("nb");if(nb){nb.textContent=quizIdx+1<quizQueue.length?"Câu tiếp theo →":"Xem kết quả →";nb.classList.add("on");}
+}
+
+// ══ Read + Image ══
+function renderReadImg(q){
+  const opts=q.opts&&q.opts.length?shuffled(q.opts):[];
+  const correctLabel=q.extra||q.answer;
+  return `<div class="qbox">${esc(q.prompt)}</div>
+  <div class="img-opts">${opts.map(o=>`<button class="img-obt" onclick="checkImgMCQ(this,'${esc(o)}','${esc(q.answer)}','${esc(correctLabel)}')">
+    <img src="${esc(o)}" alt="" onerror="this.style.display='none'">
+    <div class="img-lbl">&nbsp;</div>
+  </button>`).join("")}</div>
+  <div class="fb" id="fb"></div>
+  <button class="nxbt" id="nb" onclick="nextQ()"></button>`;
+}
+
+// ══ Listen + Image ══
+function renderListenImg(q){
+  const opts=q.opts&&q.opts.length?shuffled(q.opts):[];
+  const correctLabel=q.extra||q.answer;
+  return `<div class="lbox">
+    <span class="listen-sub-badge">🎧 Nghe và chọn ảnh</span>
+    <button class="lbtn" style="margin-top:10px" onclick="playQuestionAudio('${esc(q.audioUrl||"")}','')">
+      <svg viewBox="0 0 24 24" fill="white" width="20" height="20"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
+      Nghe
+    </button>
+  </div>
+  <div class="img-opts">${opts.map(o=>`<button class="img-obt" onclick="checkImgMCQ(this,'${esc(o)}','${esc(q.answer)}','${esc(correctLabel)}')">
+    <img src="${esc(o)}" alt="" onerror="this.style.display='none'">
+    <div class="img-lbl">&nbsp;</div>
+  </button>`).join("")}</div>
+  <div class="fb" id="fb"></div>
+  <button class="nxbt" id="nb" onclick="nextQ()"></button>`;
+}
+
 function showFB(ok,ans){
   const fb=document.getElementById("fb");if(!fb)return;
   fb.className="fb on "+(ok?"ok":"bad");
