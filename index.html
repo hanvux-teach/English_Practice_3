@@ -1182,7 +1182,8 @@ const Q_FORMS={
     <label class="lbl">Tất cả các từ trong word box — gồm cả từ đúng và từ mồi nhử (mỗi từ 1 dòng)</label>
     <textarea class="inp" id="qf-opts" rows="5" placeholder="cat&#10;fence&#10;sunny&#10;dog&#10;rainy"></textarea>
     <label class="lbl">Dịch nghĩa (tuỳ chọn)</label>
-    <input class="inp" id="qf-extra" placeholder="">`,
+    <input class="inp" id="qf-extra" placeholder="">
+    <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;margin-top:2px"><input type="checkbox" id="qf-anyorder" style="width:auto;margin:0"> Thứ tự đáp án không quan trọng (friendly = smart đều được)</label>`,
   "listen-multi":`<label class="lbl">Audio URL</label>
     <input class="inp" id="qf-audio" placeholder="https://....mp3">
     <label class="lbl">Hướng dẫn (hiển thị cho học sinh)</label>
@@ -1251,7 +1252,7 @@ function rpSubQExtra(sq,i){
   if(t==="fill") return `<label class="lbl">Đáp án (điền vào ___)</label><input class="inp" value="${esc(sq.answer||"")}" oninput="rpSubQs[${i}].answer=this.value">`;
   if(t==="tf") return `<label class="lbl">Đúng hay Sai?</label><select class="inp" onchange="rpSubQs[${i}].answer=this.value"><option value="True"${(sq.answer||"True")==="True"?" selected":""}>True</option><option value="False"${sq.answer==="False"?" selected":""}>False</option></select>`;
   if(t==="arrange") return `<label class="lbl">Câu đầy đủ (sẽ xáo trộn)</label><input class="inp" value="${esc(sq.answer||"")}" oninput="rpSubQs[${i}].answer=this.value">`;
-  if(t==="drag-fill") return `<label class="lbl">Đáp án theo thứ tự (mỗi dòng)</label><textarea class="inp" rows="2" oninput="rpSubQs[${i}].answer=this.value">${esc(sq.answer||"")}</textarea><label class="lbl">Word box (mỗi dòng)</label><textarea class="inp" rows="3" oninput="rpSubQs[${i}].opts=this.value.split('\\n').filter(Boolean)">${esc((sq.opts||[]).join("\\n"))}</textarea>`;
+  if(t==="drag-fill") return `<label class="lbl">Đáp án theo thứ tự (mỗi dòng)</label><textarea class="inp" rows="2" oninput="rpSubQs[${i}].answer=this.value">${esc(sq.answer||"")}</textarea><label class="lbl">Word box (mỗi dòng)</label><textarea class="inp" rows="3" oninput="rpSubQs[${i}].opts=this.value.split('\\n').filter(Boolean)">${esc((sq.opts||[]).join("\\n"))}</textarea><label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;margin-top:4px"><input type="checkbox" ${sq.anyOrder?"checked":""} onchange="rpSubQs[${i}].anyOrder=this.checked" style="width:auto;margin:0"> Thứ tự không quan trọng</label>`;
   return "";
 }
 function rpSubQChange(i,type){rpSubQs[i]={type,prompt:rpSubQs[i].prompt||"",answer:"",opts:[]};rpRenderSubQs();}
@@ -1286,6 +1287,7 @@ function openQModal(id){
       const fo=document.getElementById("qf-opts");if(fo&&fo.type!=="hidden")fo.value=(q.opts||[]).join(fo.tagName==="TEXTAREA"?"\n":", ");
       const fe=document.getElementById("qf-extra");if(fe&&fe.type!=="hidden")fe.value=q.extra||"";
       const faud=document.getElementById("qf-audio");if(faud) faud.value=q.audioUrl||"";
+      const fao=document.getElementById("qf-anyorder");if(fao)fao.checked=!!(q.anyOrder);
       const flsub=document.getElementById("qf-lsub");if(flsub) flsub.value=q.listenSub||"mcq";
       if(q.type==="reading-passage"){
         const ft=document.getElementById("qf-rp-title");if(ft)ft.value=q.rpTitle||"";
@@ -1328,6 +1330,7 @@ async function saveQ(){
   }
   if(!prompt||!answer){document.getElementById("mq-err").classList.add("on");return;}
   const opts=optsRaw?(fo&&fo.type==="hidden"?optsRaw.split(","):optsRaw.split("\n")).map(x=>x.trim()).filter(Boolean):[];
+  const fao=document.getElementById("qf-anyorder");const anyOrder=fao?fao.checked:false;
   if(id){
   
     const existing =
@@ -1340,7 +1343,7 @@ async function saveQ(){
         existing.firestoreId
       ),
       {
-        topicId,type,prompt,answer,opts,extra,audioUrl,
+        topicId,type,prompt,answer,opts,extra,audioUrl,anyOrder,
         ...(subQuestions!==undefined?{subQuestions,rpTitle}:{})
       }
     );
@@ -1354,7 +1357,7 @@ async function saveQ(){
       ),
       {
         id:"q"+Date.now(),
-        topicId,type,prompt,answer,opts,extra,audioUrl,
+        topicId,type,prompt,answer,opts,extra,audioUrl,anyOrder,
         ...(subQuestions!==undefined?{subQuestions,rpTitle}:{})
       }
     );
@@ -2017,7 +2020,7 @@ function renderDragFill(q){
     const i=blankIdx++;
     return `<span class="df-blank" id="dfb-${i}" data-idx="${i}" ondragover="dfDragOver(event,this)" ondragleave="dfDragLeave(this)" ondrop="dfDrop(event,this)" onclick="dfClickBlank(this)"><span class="df-blank-text" id="dfbt-${i}"></span></span>`;
   });
-  dfState={blanks:new Array(blankIdx).fill(null),wordChosen:new Array(wordBox.length).fill(false),answers};
+  dfState={blanks:new Array(blankIdx).fill(null),wordChosen:new Array(wordBox.length).fill(false),answers,anyOrder:!!(q.anyOrder)};
   return `<div class="df-passage" id="df-passage">${passageHtml}</div>
   ${q.extra?`<div class="hint-lbl">${esc(q.extra)}</div>`:""}
   <div style="font-size:12px;color:var(--tx2);margin-bottom:6px">Kéo thả (hoặc nhấn) từ vào chỗ trống:</div>
@@ -2075,23 +2078,32 @@ function dfPlaceWord(chip,blank){
   const bt=document.getElementById("dfbt-"+idx);if(bt)bt.textContent=word;
 }
 function checkDragFill(){
-  const answers=dfState.answers;
-  const blanks=dfState.blanks;
+  const {answers,blanks,anyOrder}=dfState;
   if(blanks.some(b=>b==null)){showFB(false,"Điền tất cả các chỗ trống trước!");return;}
-  // Disable the check button immediately to prevent double-firing
   const checkBtn=document.querySelector(".btn-pur[onclick*='checkDragFill']");
   if(checkBtn){if(checkBtn.dataset.checked)return;checkBtn.dataset.checked="1";checkBtn.disabled=true;}
-  // lock
   document.querySelectorAll(".df-chip").forEach(c=>{c.setAttribute("draggable","false");c.style.cursor="default";});
   document.querySelectorAll(".df-blank").forEach(b=>{b.style.cursor="default";b.onclick=null;b.ondragover=null;b.ondrop=null;});
+  const filled=blanks.map(b=>(b?b.word.trim().toLowerCase():""));
+  const ansLower=answers.map(a=>a.trim().toLowerCase());
   let allOk=true;
-  blanks.forEach((b,i)=>{
-    const blank=document.getElementById("dfb-"+i);
-    if(!blank)return;
-    const ok=b&&b.word.trim().toLowerCase()===answers[i]?.trim().toLowerCase();
-    blank.classList.add(ok?"ok":"bad");
-    if(!ok)allOk=false;
-  });
+  if(anyOrder){
+    // multiset match: each filled word must exist in answers pool, order doesn't matter
+    const pool=[...ansLower];
+    const matched=filled.map(w=>{const idx=pool.indexOf(w);if(idx!==-1){pool.splice(idx,1);return true;}return false;});
+    blanks.forEach((b,i)=>{
+      const blank=document.getElementById("dfb-"+i);if(!blank)return;
+      blank.classList.add(matched[i]?"ok":"bad");
+      if(!matched[i])allOk=false;
+    });
+  }else{
+    blanks.forEach((b,i)=>{
+      const blank=document.getElementById("dfb-"+i);if(!blank)return;
+      const ok=filled[i]===ansLower[i];
+      blank.classList.add(ok?"ok":"bad");
+      if(!ok)allOk=false;
+    });
+  }
   showFB(allOk,answers.join(", "));if(allOk)quizCorrect++;
   const nb=document.getElementById("nb");if(nb){nb.textContent=quizIdx+1<quizQueue.length?"Câu tiếp theo →":"Xem kết quả →";nb.classList.add("on");}
 }
@@ -2270,7 +2282,7 @@ function rpRenderDragFill(sq,body){
     const i=bi++;
     return `<span class="df-blank" id="rpdfb-${i}" data-idx="${i}" ondragover="rpDfOver(event,this)" ondragleave="rpDfLeave(this)" ondrop="rpDfDrop(event,this)" onclick="rpDfClickBlank(this)"><span id="rpdfbt-${i}"></span></span>`;
   });
-  rpDfState={blanks:new Array(bi).fill(null),answers};
+  rpDfState={blanks:new Array(bi).fill(null),answers,anyOrder:!!(sq.anyOrder)};
   body.innerHTML=`<div class="df-passage">${ph}</div>
     <div class="df-wordbox" id="rpdf-wb">${wordBox.map((w,i)=>`<span class="df-chip" id="rpdfc-${i}" draggable="true" data-word="${esc(w)}" data-ci="${i}" ondragstart="rpDfStart(event,this)" onclick="rpDfClickChip(this)">${esc(w)}</span>`).join("")}</div>
     <button class="btn btn-pur" style="width:100%;margin-bottom:4px" onclick="rpCheckDf()">Kiểm tra</button>`;
@@ -2302,18 +2314,29 @@ function rpDfPlace(chip,blank){
   const bt=document.getElementById("rpdfbt-"+idx);if(bt)bt.textContent=word;
 }
 function rpCheckDf(){
-  const {blanks,answers}=rpDfState;
+  const {blanks,answers,anyOrder}=rpDfState;
   if(blanks.some(b=>b==null)){rpShowFB(false,"Điền tất cả chỗ trống trước!");return;}
   const btn=document.querySelector("#rp-qblock .btn-pur");
   if(btn){if(btn.dataset.checked)return;btn.dataset.checked="1";btn.disabled=true;}
   document.querySelectorAll("#rp-qblock .df-chip").forEach(c=>{c.setAttribute("draggable","false");c.style.cursor="default";});
   document.querySelectorAll("#rp-qblock .df-blank").forEach(b=>{b.style.cursor="default";b.onclick=null;b.ondragover=null;b.ondrop=null;});
+  const filled=blanks.map(b=>(b?b.word.trim().toLowerCase():""));
+  const ansLower=answers.map(a=>a.trim().toLowerCase());
   let allOk=true;
-  blanks.forEach((b,i)=>{
-    const blank=document.getElementById("rpdfb-"+i);if(!blank)return;
-    const ok=b&&b.word.trim().toLowerCase()===answers[i]?.trim().toLowerCase();
-    blank.classList.add(ok?"ok":"bad");if(!ok)allOk=false;
-  });
+  if(anyOrder){
+    const pool=[...ansLower];
+    const matched=filled.map(w=>{const idx=pool.indexOf(w);if(idx!==-1){pool.splice(idx,1);return true;}return false;});
+    blanks.forEach((b,i)=>{
+      const blank=document.getElementById("rpdfb-"+i);if(!blank)return;
+      blank.classList.add(matched[i]?"ok":"bad");if(!matched[i])allOk=false;
+    });
+  }else{
+    blanks.forEach((b,i)=>{
+      const blank=document.getElementById("rpdfb-"+i);if(!blank)return;
+      const ok=filled[i]===ansLower[i];
+      blank.classList.add(ok?"ok":"bad");if(!ok)allOk=false;
+    });
+  }
   rpShowFB(allOk,answers.join(", "));
 }
 
