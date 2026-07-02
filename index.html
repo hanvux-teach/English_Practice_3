@@ -470,7 +470,7 @@ window.fb = {
           <option value="">Tất cả dạng</option>
           <option>mcq</option><option>fill</option><option>arrange</option>
           <option>phonics</option><option>listen</option><option>listen-tf</option><option>listen-fill</option>
-          <option>tf</option><option>odd</option><option>img-mcq</option><option>read-img</option><option>listen-img</option>
+          <option>tf</option><option>odd</option><option>img-mcq</option><option>read-img</option><option>listen-img</option><option>pic-mcq</option>
           <option>mcq-multi</option><option>drag-fill</option><option>listen-multi</option><option>img-fill</option>
           <option>reading-passage</option>
         </select>
@@ -618,6 +618,7 @@ window.fb = {
       <option value="img-mcq">Image MCQ — Chọn ảnh đúng</option>
       <option value="read-img">Read + Image — Đọc chọn ảnh</option>
       <option value="listen-img">Listen + Image — Nghe chọn ảnh</option>
+      <option value="pic-mcq">Picture MCQ — Nhìn ảnh, chọn đáp án chữ</option>
       <option value="mcq-multi">MCQ Multi — Chọn nhiều đáp án</option>
       <option value="drag-fill">Drag Fill — Kéo thả từ vào chỗ trống</option>
       <option value="listen-multi">Listen Multi — Nghe và chọn nhiều đáp án</option>
@@ -1152,6 +1153,16 @@ const Q_FORMS={
   <textarea class="inp" id="qf-opts" rows="4" placeholder="https://cat.jpg&#10;https://dog.jpg&#10;https://bird.jpg"></textarea>
   <label class="lbl">Nhãn đáp án đúng</label>
   <input class="inp" id="qf-extra" placeholder="cat">`,
+  "pic-mcq":`<label class="lbl">URL ảnh</label>
+  <input class="inp" id="qf-audio" placeholder="https://....jpg hoặc .png">
+  <label class="lbl">Câu hỏi / hướng dẫn (tuỳ chọn)</label>
+  <input class="inp" id="qf-prompt" placeholder="Con vật này là gì?">
+  <label class="lbl">Đáp án đúng</label>
+  <input class="inp" id="qf-answer" placeholder="cat">
+  <label class="lbl">Các lựa chọn (mỗi đáp án 1 dòng, gồm đáp án đúng)</label>
+  <textarea class="inp" id="qf-opts" rows="4" placeholder="cat&#10;dog&#10;bird&#10;fish"></textarea>
+  <label class="lbl">Gợi ý / dịch nghĩa (tuỳ chọn)</label>
+  <input class="inp" id="qf-extra" placeholder="">`,
   tf:`<label class="lbl">Câu tiếng Anh (đúng hoặc sai)</label>
     <textarea class="inp" id="qf-prompt" rows="3" placeholder="Elephants can fly.&#10;(có thể xuống dòng để viết đoạn văn, rồi xuống dòng ghi câu hỏi)"></textarea>
     <label class="lbl">Câu này đúng hay sai?</label>
@@ -1628,7 +1639,7 @@ function renderQ(){
   document.getElementById("q-ctr").textContent=(quizIdx+1)+" / "+total;
   document.getElementById("q-live").textContent="✓ "+quizCorrect;
   document.getElementById("qpfill").style.width=(quizIdx/total*100)+"%";
-  const labels={mcq:"Từ vựng",fill:"Điền từ",arrange:"Sắp xếp câu",phonics:"Phiên âm",listen:"Bài nghe","listen-tf":"Nghe Đúng/Sai","listen-fill":"Nghe Điền từ",tf:"Đúng / Sai",odd:"Odd one out","img-mcq":"Chọn ảnh","read-img":"Đọc + Ảnh","listen-img":"Nghe + Ảnh","mcq-multi":"Chọn nhiều đáp án","drag-fill":"Kéo thả từ","listen-multi":"Nghe + Chọn nhiều","img-fill":"Nhìn ảnh điền từ"};
+  const labels={mcq:"Từ vựng",fill:"Điền từ",arrange:"Sắp xếp câu",phonics:"Phiên âm",listen:"Bài nghe","listen-tf":"Nghe Đúng/Sai","listen-fill":"Nghe Điền từ",tf:"Đúng / Sai",odd:"Odd one out","img-mcq":"Chọn ảnh","read-img":"Đọc + Ảnh","listen-img":"Nghe + Ảnh","pic-mcq":"Nhìn ảnh chọn chữ","mcq-multi":"Chọn nhiều đáp án","drag-fill":"Kéo thả từ","listen-multi":"Nghe + Chọn nhiều","img-fill":"Nhìn ảnh điền từ"};
   document.getElementById("qt-badge").textContent=labels[q.type]||q.type;
   const body=document.getElementById("quiz-body");
   if(q.type==="mcq"||q.type==="odd")body.innerHTML=renderMCQ(q);
@@ -1642,6 +1653,7 @@ function renderQ(){
   else if(q.type==="img-mcq")body.innerHTML=renderImgMCQ(q);
   else if(q.type==="read-img")body.innerHTML=renderReadImg(q);
   else if(q.type==="listen-img")body.innerHTML=renderListenImg(q);
+  else if(q.type==="pic-mcq")body.innerHTML=renderPicMCQ(q);
   else if(q.type==="mcq-multi"){body.innerHTML=renderMCQMulti(q);}
   else if(q.type==="drag-fill"){body.innerHTML=renderDragFill(q);initDragFill();}
   else if(q.type==="listen-multi"){body.innerHTML=renderListenMulti(q);}
@@ -1926,6 +1938,17 @@ function renderListenImg(q){
   <div class="img-opts">${opts.map(o=>`<button class="img-obt" onclick="checkImgMCQ(this,${escJs(o)},${escJs(q.answer)},${escJs(correctLabel)})">
     <img src="${esc(o)}" alt="" onerror="this.style.display='none'">
   </button>`).join("")}</div>
+  <div class="fb" id="fb"></div>
+  <button class="nxbt" id="nb" onclick="nextQ()"></button>`;
+}
+
+// ══ Picture MCQ (image prompt, text choices) ══
+function renderPicMCQ(q){
+  const opts=q.opts&&q.opts.length?shuffled(q.opts):shuffled([q.answer]);
+  const imgUrl=q.audioUrl||"";
+  return `${imgUrl?`<div style="text-align:center;margin-bottom:14px"><img src="${esc(imgUrl)}" alt="" style="max-width:100%;max-height:240px;border-radius:var(--r);border:1.5px solid var(--bord);object-fit:contain" onerror="this.style.display='none'"></div>`:""}
+  ${q.prompt?`<div class="qbox">${esc(q.prompt)}${q.extra?`<span class="qsub">${esc(q.extra)}</span>`:""}</div>`:""}
+  <div class="opts">${opts.map(o=>`<button class="obt" onclick="checkMCQ(this,${escJs(o)},${escJs(q.answer)})">${esc(o)}</button>`).join("")}</div>
   <div class="fb" id="fb"></div>
   <button class="nxbt" id="nb" onclick="nextQ()"></button>`;
 }
